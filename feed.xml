@@ -4,7 +4,7 @@
 <generator uri="https://github.com/mojombo/jekyll">Jekyll</generator>
 <link rel="self" type="application/atom+xml" href="http://crooksey.github.io/feed.xml" />
 <link rel="alternate" type="text/html" href="http://crooksey.github.io" />
-<updated>2014-07-27T14:21:31+01:00</updated>
+<updated>2014-07-27T14:27:10+01:00</updated>
 <id>http://crooksey.github.io/</id>
 <author>
   <name>Luke Crooks</name>
@@ -37,7 +37,7 @@
 
 &lt;h3 id=&quot;the-honeymoon-period&quot;&gt;The honeymoon period&lt;/h3&gt;
 
-&lt;p&gt;Everything was great, then django 1.3 became a final release and apps started moving, It wasn’t really a problem but I remember migrating from django admin media to static files and various other code changes, not something I really enjoyed. Then everything was fine again, untill 1.4 came out. This whole process really got on my nerves and changing code every version upgrade was a pain, especially when different libraries updated at different paces. Which basically means, if you want to use code that others have written for django, expect to be updating a lot of it as you migrate and projects get left behind.&lt;/p&gt;
+&lt;p&gt;Everything was great, then django 1.3 became a final release and apps started moving, It wasn’t really a problem but I remember migrating from django admin media to static files and various other code changes, not something I really enjoyed. Then everything was fine again, until 1.4 came out. This whole process really got on my nerves and changing code every version upgrade was a pain, especially when different libraries updated at different paces. Which basically means, if you want to use code that others have written for django, expect to be updating a lot of it as you migrate and projects get left behind.&lt;/p&gt;
 
 &lt;p&gt;I ended up re-writing a lot of third party apps, just so I could migrate my CMS to the the latest version.&lt;/p&gt;
 
@@ -72,7 +72,7 @@
 
 &lt;h3 id=&quot;make-a-local-user-superuser&quot;&gt;Make a local user, superuser&lt;/h3&gt;
 
-&lt;p&gt;Everytime I work on a new machine/enviroment I need to be able to create and delete databases as a local
+&lt;p&gt;Everytime I work on a new machine/environment I need to be able to create and delete databases as a local
 user quickly and easily, I am by no means a PostgreSQL expert, but I need to be able to create databases,
 ready for web application development. So the below code should get you started.&lt;/p&gt;
 
@@ -81,7 +81,7 @@ ready for web application development. So the below code should get you started.
 &lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;sudo su - postgres
 &lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;psql&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 
-&lt;p&gt;Now, we need to create a new postgres user, for the sakes of this guide, lets assume the name
+&lt;p&gt;Now, we need to create a new postgres user, for the sake of this guide, lets assume the name
 “luke” and obviously replace ‘somepassword’ with your own, secure password.&lt;/p&gt;
 
 &lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-sql&quot; data-lang=&quot;sql&quot;&gt;&lt;span class=&quot;n&quot;&gt;postgres&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=#&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;create&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;user&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;luke&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;with&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;password&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&amp;#39;somepassword&amp;#39;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
@@ -92,7 +92,7 @@ ready for web application development. So the below code should get you started.
 &lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-sql&quot; data-lang=&quot;sql&quot;&gt;&lt;span class=&quot;n&quot;&gt;postgres&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=#&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;ALTER&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;USER&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;luke&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;with&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;SUPERUSER&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
 &lt;span class=&quot;k&quot;&gt;ALTER&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;ROLE&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 
-&lt;p&gt;Now, open up a new termianl and you should be able to create and delete databases:&lt;/p&gt;
+&lt;p&gt;Now, open up a new terminal and you should be able to create and delete databases:&lt;/p&gt;
 
 &lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;createdb staff
 &lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;dropdb staff&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;

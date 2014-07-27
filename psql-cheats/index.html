@@ -143,7 +143,7 @@
 
 <h3 id="make-a-local-user-superuser">Make a local user, superuser</h3>
 
-<p>Everytime I work on a new machine/enviroment I need to be able to create and delete databases as a local
+<p>Everytime I work on a new machine/environment I need to be able to create and delete databases as a local
 user quickly and easily, I am by no means a PostgreSQL expert, but I need to be able to create databases,
 ready for web application development. So the below code should get you started.</p>
 
@@ -152,7 +152,7 @@ ready for web application development. So the below code should get you started.
 <div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nv">$ </span>sudo su - postgres
 <span class="nv">$ </span>psql</code></pre></div>
 
-<p>Now, we need to create a new postgres user, for the sakes of this guide, lets assume the name
+<p>Now, we need to create a new postgres user, for the sake of this guide, lets assume the name
 “luke” and obviously replace ‘somepassword’ with your own, secure password.</p>
 
 <div class="highlight"><pre><code class="language-sql" data-lang="sql"><span class="n">postgres</span><span class="o">=#</span> <span class="k">create</span> <span class="k">user</span> <span class="n">luke</span> <span class="k">with</span> <span class="n">password</span> <span class="s1">&#39;somepassword&#39;</span><span class="p">;</span>
@@ -163,7 +163,7 @@ ready for web application development. So the below code should get you started.
 <div class="highlight"><pre><code class="language-sql" data-lang="sql"><span class="n">postgres</span><span class="o">=#</span> <span class="k">ALTER</span> <span class="k">USER</span> <span class="n">luke</span> <span class="k">with</span> <span class="n">SUPERUSER</span><span class="p">;</span>
 <span class="k">ALTER</span> <span class="k">ROLE</span></code></pre></div>
 
-<p>Now, open up a new termianl and you should be able to create and delete databases:</p>
+<p>Now, open up a new terminal and you should be able to create and delete databases:</p>
 
 <div class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nv">$ </span>createdb staff
 <span class="nv">$ </span>dropdb staff</code></pre></div>
