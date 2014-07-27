@@ -4,13 +4,179 @@
 <generator uri="https://github.com/mojombo/jekyll">Jekyll</generator>
 <link rel="self" type="application/atom+xml" href="http://crooksey.github.io/feed.xml" />
 <link rel="alternate" type="text/html" href="http://crooksey.github.io" />
-<updated>2014-07-27T14:27:10+01:00</updated>
+<updated>2014-07-27T15:41:07+01:00</updated>
 <id>http://crooksey.github.io/</id>
 <author>
   <name>Luke Crooks</name>
   <uri>http://crooksey.github.io/</uri>
   <email>luke@pumalo.org</email>
 </author>
+
+
+<entry>
+  <title type="html"><![CDATA[How to scale a web application with one docker container]]></title>
+ <link rel="alternate" type="text/html" href="http://crooksey.github.io/docker-jenkins/" />
+  <id>http://crooksey.github.io/docker-jenkins</id>
+  <updated>2014-07-27T00:00:00-00:00</updated>
+  <published>2014-07-27T00:00:00+01:00</published>
+  
+  <author>
+    <name>Luke Crooks</name>
+    <uri>http://crooksey.github.io</uri>
+    <email>luke@pumalo.org</email>
+  </author>
+  <content type="html">&lt;h3 id=&quot;the-problem&quot;&gt;The problem&lt;/h3&gt;
+
+&lt;p&gt;Anyone who has worked in/for a startup will know you aren’t just (your job role) you job is 
+(your job role) + everything else tech related. Back end programmers are writing javascript,
+front end developers are configuring nginx, you get the jist.&lt;/p&gt;
+
+&lt;p&gt;I am part of a new startup &lt;a href=&quot;http://getwork2day.com&quot;&gt;GetWork2Day&lt;/a&gt; and currently we have 10 people
+working for the startup, I am the only one who is doing anything technical, which means I am responsible
+for: Backend, front end, database, server architecture and everything else. Our current server configuration
+is a basic Ubuntu server, with nginx and everything else needed, its behind a load balancer to handle scaling
+and it does the job. However, I don’t want to manage a server full time and when we get more staff, I don’t want people have no server experience, poking around with my server, ill come back from a few days off and
+can foresee the problems already. I need a service where I can just push code to github and it deploys for me.&lt;/p&gt;
+
+&lt;h3 id=&quot;wait-what-about&quot;&gt;Wait, what about….&lt;/h3&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://docs.aws.amazon.com/elasticbeanstalk/latest/dg/create_deploy_Python_flask.html&quot;&gt;Elastic Beanstalk&lt;/a&gt;, &lt;a href=&quot;https://www.heroku.com/&quot;&gt;Heroku&lt;/a&gt;, &lt;a href=&quot;https://www.digitalocean.com/&quot;&gt;Digital Ocean&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;Well all of thes are great, they really are, but running things outside of the normal remit causes problems, &lt;a href=&quot;http://getwork2day.com&quot;&gt;GetWork2Day&lt;/a&gt; uses very unique and obscure libraries for some parts,
+so I wanted more control over the deployment, also we can’t afford to run on any of the three major players.&lt;/p&gt;
+
+&lt;h3 id=&quot;so-how-can-i-homebrew-this&quot;&gt;So how can I homebrew this?&lt;/h3&gt;
+
+&lt;p&gt;Well, I first looked at &lt;a href=&quot;http://puppetlabs.com/puppet/what-is-puppet&quot;&gt;Puppet&lt;/a&gt; and &lt;a href=&quot;https://www.atlassian.com/software/bamboo&quot;&gt;Bamboo&lt;/a&gt;. Both of these are great bits of software, but they are overpriced (for us) and they also work on a fixed IP address (from what I was reading) to connect to your application. If you’re application is behind a load balancer, you IP is always random and so I needed something where my application reached out and connected to my git server, downloaded the source code (if there was new commits), rebuilt it and then re-launched the application. This led me to jenkins.&lt;/p&gt;
+
+&lt;h3 id=&quot;why-jenkins&quot;&gt;Why Jenkins?&lt;/h3&gt;
+
+&lt;p&gt;Jenkins is free and open source and with its great array of plugins, I can make it do whatever I want (within reason). What I did was create a basic jenkins setup with a git project, set it to check for new git commits every hour, if there was new code to download, jenkins would pull the changes, copy the code to the running location with rsync and then restart the local application server. Meaning now all I have to to is push code to the master branch (or however you configure jenkins) then, jenkins will automatically sort everything out for the re-deployment. Even if my application had scaled across 20 servers, each server would stay up-to-date with the latest code, without any further integration from me (or anyone). Jenkins can also run a custom command or script after a job is cloned/build completed successfully, mine is:&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;&lt;span class=&quot;c&quot;&gt;# After successfull build&lt;/span&gt;
+
+&lt;span class=&quot;c&quot;&gt;# rsync the build dir to the app dir&lt;/span&gt;
+rsync -av --delete --delete-excluded --exclude &lt;span class=&quot;s2&quot;&gt;&amp;quot;.pyc&amp;quot;&lt;/span&gt; /var/lib/jenkins/jobs/g1/workspace/ /home/app/
+
+&lt;span class=&quot;c&quot;&gt;# restart supervisor&lt;/span&gt;
+supervisorctl restart tangable:&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;what-does-this-have-to-do-with-docker&quot;&gt;What does this have to do with Docker?&lt;/h3&gt;
+
+&lt;p&gt;Well, with the current setup, I still have a server to maintain and I didn’t wan’t that, I wanted this entire server bundled into one build script, and now I am going to tell you how I built this entire framework with a script in under 40 lines, with the brilliant &lt;a href=&quot;https://docs.docker.com/reference/builder/&quot;&gt;Dockerfile&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h3 id=&quot;the-basics&quot;&gt;The basics&lt;/h3&gt;
+
+&lt;p&gt;Ok, so lets start:&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;&lt;span class=&quot;c&quot;&gt;# Set base image&lt;/span&gt;
+FROM ubuntu
+MAINTAINER Luke Crooks &lt;span class=&quot;s2&quot;&gt;&amp;quot;luke@pumalo.org&amp;quot;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;Now, we have the basics set, we can install some packages:&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;&lt;span class=&quot;c&quot;&gt;### APT SECTION ###&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# Update aptitude with new repo&lt;/span&gt;
+RUN apt-get update
+&lt;span class=&quot;c&quot;&gt;# Install software &lt;/span&gt;
+RUN apt-get install -y git nginx supervisor wget python-virtualenv curl 
+RUN apt-get install -y python-dev postgresql-server-dev-9.3 rsync
+&lt;span class=&quot;c&quot;&gt;# Install libaries&lt;/span&gt;
+RUN apt-get install -y libjpeg62 libjpeg62-dev zlib1g-dev libpng12-0
+RUN apt-get install -y libtiff5 libgif4 libgeos-dev&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;Now we have the basics we need, we can go ahead and start configuring.
+In the same folder that you are building your Dockerfile, you will also need the copy of your ssh key (used at github or bitbucket to verify your credentials).&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;&lt;span class=&quot;c&quot;&gt;### SSH SECTION ###&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# Make ssh dir&lt;/span&gt;
+RUN mkdir /root/.ssh/
+&lt;span class=&quot;c&quot;&gt;# Copy over private key, and set permissions&lt;/span&gt;
+ADD id_rsa /root/.ssh/id_rsa
+RUN chmod &lt;span class=&quot;m&quot;&gt;0600&lt;/span&gt; /root/.ssh/id_rsa
+&lt;span class=&quot;c&quot;&gt;# Add bitbuckets key to known_hosts&lt;/span&gt;
+RUN ssh-keyscan bitbucket.org &amp;gt;&amp;gt; /root/.ssh/known_hosts&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;Now we can clone our private repositories, one for all our docker configuration, the other for our application:&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;&lt;span class=&quot;c&quot;&gt;# Clone the conf files into the docker container&lt;/span&gt;
+RUN git clone git@bitbucket.org:Username/docker-conf.git /home/docker-conf
+&lt;span class=&quot;c&quot;&gt;# Clone the repo locally&lt;/span&gt;
+RUN git clone git@bitbucket.org:Username/application.git /home/app&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;Awesome, now we have all the configuration filed we need, we can remove the default files and copy
+your custom configuration files to where they need to be:&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;&lt;span class=&quot;c&quot;&gt;# remove default nginx configs&lt;/span&gt;
+RUN rm /etc/nginx/sites-available/default &lt;span class=&quot;o&quot;&gt;&amp;amp;&amp;amp;&lt;/span&gt; rm /etc/nginx/sites-enabled/default
+&lt;span class=&quot;c&quot;&gt;# Copy new settings&lt;/span&gt;
+RUN cp /home/docker-conf/configs/nginx/nginx.conf /etc/nginx/nginx.conf
+RUN cp /home/docker-conf/configs/nginx/sites-available/site.conf /etc/nginx/sites-available/
+&lt;span class=&quot;c&quot;&gt;# Enable the new site with a symbolic link&lt;/span&gt;
+RUN ln -s /etc/nginx/sites-available/site.conf /etc/nginx/sites-enabled/site.conf&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;Next up, we are going to install Jenkins and copy over our local config files:&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;&lt;span class=&quot;c&quot;&gt;# Install Jenkins&lt;/span&gt;
+RUN wget -q -O - http://pkg.jenkins-ci.org/debian/jenkins-ci.org.key &lt;span class=&quot;p&quot;&gt;|&lt;/span&gt; sudo apt-key add -
+RUN sh -c &lt;span class=&quot;s1&quot;&gt;&amp;#39;echo deb http://pkg.jenkins-ci.org/debian binary/ &amp;gt; /etc/apt/sources.list.d/jenkins.list&amp;#39;&lt;/span&gt;
+RUN apt-get update
+RUN apt-get install -y jenkins
+
+&lt;span class=&quot;c&quot;&gt;# Copy over configs&lt;/span&gt;
+RUN rm /etc/default/jenkins
+RUN cp /home/docker-conf/jenkins/default /etc/default/jenkins 
+RUN chmod +x /home/docker-conf/jenkins/after-build
+RUN rm -rf /var/lib/jenkins/*
+RUN cp -a /home/docker-conf/jenkins/root/* /var/lib/jenkins/
+&lt;span class=&quot;c&quot;&gt;# Reset file permissions after moving files&lt;/span&gt;
+RUN chown jenkins:jenkins -R /var/lib/jenkins/
+RUN chmod &lt;span class=&quot;m&quot;&gt;775&lt;/span&gt; -R /var/lib/jenkins/
+
+&lt;span class=&quot;c&quot;&gt;# Give jenkins permissions to manage the supervisor service&lt;/span&gt;
+RUN &lt;span class=&quot;nb&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&amp;quot;jenkins        ALL = NOPASSWD: ALL&amp;quot;&lt;/span&gt; &amp;gt;&amp;gt; /etc/sudoers&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;Now this is fairly python specific, but the same principles will apply for other languages, we need to create an environment to install application dependencies, and install the dependencies from the requirements file:&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;&lt;span class=&quot;c&quot;&gt;# Install the python requirements from requirements.txt&lt;/span&gt;
+RUN virtualenv --no-site-packages &lt;span class=&quot;s2&quot;&gt;&amp;quot;/home/env&amp;quot;&lt;/span&gt;
+RUN /home/env/bin/pip install -r /home/app/requirements.txt
+&lt;span class=&quot;c&quot;&gt;# Lastly install the app into the virtualenv&lt;/span&gt;
+RUN /home/env/bin/python2.7 /home/app/setup.py install&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;not-normal-docker-behaviour&quot;&gt;Not normal docker behaviour&lt;/h3&gt;
+
+&lt;p&gt;Usually a docker container is meant to one run process/command, e.g just an application, or a web server or whatever you want. But, if you use a program such as &lt;a href=&quot;http://supervisord.org/&quot;&gt;Supervisor&lt;/a&gt; you can configure it to run multiple programs, e.g. in old money, you can run an entire LAMP stack inside a docker container. Explaining how to configure Supervisor is outside the scope of this post, but check out their website for some guides.&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;&lt;span class=&quot;c&quot;&gt;### SUPERVISOR ###&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# Now copy the supervisor configs over&lt;/span&gt;
+RUN cp /home/docker-conf/configs/supervisor/supervisord.conf /etc/supervisor/supervisord.conf
+RUN supervisord -c /etc/supervisor/supervisord.conf
+
+&lt;span class=&quot;c&quot;&gt;# Web app configs&lt;/span&gt;
+RUN cp /home/docker-conf/configs/supervisor/site.conf /etc/supervisor/conf.d/app.conf
+&lt;span class=&quot;c&quot;&gt;# Nginx configs&lt;/span&gt;
+RUN cp /home/docker-conf/configs/supervisor/nginx.conf /etc/supervisor/conf.d/nginx.conf
+&lt;span class=&quot;c&quot;&gt;# Jenkins confgs&lt;/span&gt;
+RUN cp /home/docker-conf/configs/supervisor/jenkins.conf /etc/supervisor/conf.d/jenkins.conf&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;Now docker is running our application, nginx and jenkins, all we need to do is expose port 80 and tell docker to run the supervisor command on start:&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;&lt;span class=&quot;c&quot;&gt;# Expose the python app to world, note jenkins will not be accessible as we&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# are only expising port 80, not 8080 which is where jenkins runs.&lt;/span&gt;
+EXPOSE 80
+CMD &lt;span class=&quot;o&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&amp;quot;supervisord&amp;quot;&lt;/span&gt;, &lt;span class=&quot;s2&quot;&gt;&amp;quot;-n&amp;quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;]&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;in-summary&quot;&gt;In Summary&lt;/h3&gt;
+
+&lt;p&gt;So in summary, we have just created one script that builds an Ubuntu image, installs all dependencies, configures the build process, manages the application and web server and takes care of everything else.
+It is also capable of running behind a load balancer, so if your docker container was scaled into 20 different instances, they would all stay up to date, without having to configure a management application to deploy new code to different IP addresses. &lt;/p&gt;
+
+&lt;h3 id=&quot;note&quot;&gt;Note&lt;/h3&gt;
+&lt;p&gt;This is not usually the norm for docker deployment, but it works and it works well. Use at your own peril! No databases configuration is shown here as we are using a remote RDS amazon database. You should never host a databased behind your own load balancer as they are destroyed and created frequently. &lt;/p&gt;
+
+  &lt;p&gt;&lt;a href=&quot;http://crooksey.github.io/docker-jenkins/&quot;&gt;How to scale a web application with one docker container&lt;/a&gt; was originally published by Luke Crooks at &lt;a href=&quot;http://crooksey.github.io&quot;&gt;Luke's Blog&lt;/a&gt; on July 27, 2014.&lt;/p&gt;</content>
+</entry>
 
 
 <entry>

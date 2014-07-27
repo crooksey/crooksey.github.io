@@ -32,6 +32,10 @@
 
     
     <url>
+        <loc>http://crooksey.github.io/docker-jenkins/</loc>
+    </url>
+    
+    <url>
         <loc>http://crooksey.github.io/why-i-stopped-django/</loc>
     </url>
     
