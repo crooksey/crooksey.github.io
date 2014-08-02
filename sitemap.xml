@@ -32,6 +32,10 @@
 
     
     <url>
+        <loc>http://crooksey.github.io/python-tsp/</loc>
+    </url>
+    
+    <url>
         <loc>http://crooksey.github.io/docker-jenkins/</loc>
     </url>
     
